@@ -1,0 +1,8 @@
+{
+  "name": "Mo360 Tour",
+  "description": "360-degree interactive virtual tour viewer with architectural floorplan minimap and RICOH THETA OSC Wi-Fi capture HUD.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mo360 Tour</string>
+    <string name="share_tour">Share</string>
+    <string name="copied_label">Copied</string>
+    <string name="auto_rotate">Auto-Rotate</string>
+    <string name="pause_rotate">Pause</string>
+    <string name="toggle_fullscreen">Toggle immersive mode</string>
+    <string name="capture_hud">Capture HUD</string>
+    <string name="preview_tour">Preview Tour</string>
+    <string name="floor_plan">Floor Plan</string>
+    <string name="select_room">Select Room</string>
+    <string name="drag_to_look">Drag to look • Pinch to zoom</string>
+    <string name="placement_banner">Tap anywhere in the 360° view to place navigation hotspot</string>
+    <string name="active_capture_room">Active Capture Room</string>
+    <string name="exposure_preset">Exposure Preset</string>
+    <string name="capture_cta">Capture Room &amp; Auto-Offload</string>
+    <string name="capturing_cta">Capturing &amp; Offloading…</string>
+    <string name="osc_pipeline">OSC PIPELINE</string>
+    <string name="drop_hotspot">Drop Navigation Hotspot</string>
+    <string name="place_pin">Place Pin</string>
+    <string name="tap_360">Tap 360°</string>
+</resources>

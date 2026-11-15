@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">VirtualTour Capture</string>
-    <string name="title_activity_main">VirtualTour Capture</string>
-    <string name="package_name">com.virtualtour.capture</string>
-    <string name="custom_url_scheme">com.virtualtour.capture</string>
-</resources>
