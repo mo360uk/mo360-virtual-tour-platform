@@ -25,75 +25,91 @@ public class ThetaWifiPlugin extends Plugin {
     private String connectedSsid;
 
     @PluginMethod
-    public void connectToThetaWifi(PluginCall call) {
-        String ssid = call.getString("ssid", DEFAULT_SSID);
-        String password = call.getString("password", DEFAULT_PASSWORD);
-        int timeoutMs = call.getInt("timeoutMs", 20000);
+    public void connectToThetaWifi(final PluginCall call) {
+        String reqSsid = call.getString("ssid");
+        if (reqSsid == null || reqSsid.trim().isEmpty()) {
+            reqSsid = DEFAULT_SSID;
+        }
+        final String ssid = reqSsid;
+
+        String reqPassword = call.getString("password");
+        if (reqPassword == null || reqPassword.trim().isEmpty()) {
+            reqPassword = DEFAULT_PASSWORD;
+        }
+        final String password = reqPassword;
+
+        Integer timeoutObj = call.getInt("timeoutMs");
+        final int timeoutMs = (timeoutObj != null && timeoutObj > 0) ? timeoutObj : 20000;
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             call.reject("WifiNetworkSpecifier requires Android 10 (API 29) or higher.");
             return;
         }
 
-        ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        final ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         connectivityManager = cm;
 
         // Clean up any prior callback before requesting a new network
         releaseNetworkBinding(cm);
 
-        WifiNetworkSpecifier specifier = new WifiNetworkSpecifier.Builder()
-                .setSsid(ssid)
-                .setWpa2Passphrase(password)
-                .build();
+        try {
+            WifiNetworkSpecifier specifier = new WifiNetworkSpecifier.Builder()
+                    .setSsid(ssid)
+                    .setWpa2Passphrase(password)
+                    .build();
 
-        NetworkRequest request = new NetworkRequest.Builder()
-                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .setNetworkSpecifier(specifier)
-                .build();
+            NetworkRequest request = new NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .setNetworkSpecifier(specifier)
+                    .build();
 
-        ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
-            @Override
-            public void onAvailable(Network network) {
-                super.onAvailable(network);
-                activeNetwork = network;
-                connectedSsid = ssid;
-                cm.bindProcessToNetwork(network);
+            ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    super.onAvailable(network);
+                    activeNetwork = network;
+                    connectedSsid = ssid;
+                    cm.bindProcessToNetwork(network);
 
-                JSObject result = new JSObject();
-                result.put("connected", true);
-                result.put("ssid", ssid);
-                result.put("boundToNetwork", true);
-                result.put("platform", "android");
-                result.put("message", "Bound process to THETA Wi-Fi (" + ssid + ")");
-                call.resolve(result);
-            }
-
-            @Override
-            public void onUnavailable() {
-                super.onUnavailable();
-                releaseNetworkBinding(cm);
-                call.reject("Unable to connect to THETA Wi-Fi (" + ssid + "). Ensure camera Wi-Fi is on.");
-            }
-
-            @Override
-            public void onLost(Network network) {
-                super.onLost(network);
-                if (activeNetwork != null && activeNetwork.equals(network)) {
-                    cm.bindProcessToNetwork(null);
-                    activeNetwork = null;
-                    connectedSsid = null;
+                    JSObject result = new JSObject();
+                    result.put("connected", true);
+                    result.put("ssid", ssid);
+                    result.put("boundToNetwork", true);
+                    result.put("platform", "android");
+                    result.put("message", "Bound process to THETA Wi-Fi (" + ssid + ")");
+                    call.resolve(result);
                 }
-            }
-        };
 
-        networkCallback = callback;
-        cm.requestNetwork(request, callback, timeoutMs);
+                @Override
+                public void onUnavailable() {
+                    super.onUnavailable();
+                    releaseNetworkBinding(cm);
+                    call.reject("Unable to connect to THETA Wi-Fi (" + ssid + "). Ensure camera Wi-Fi is on.");
+                }
+
+                @Override
+                public void onLost(Network network) {
+                    super.onLost(network);
+                    if (activeNetwork != null && activeNetwork.equals(network)) {
+                        cm.bindProcessToNetwork(null);
+                        activeNetwork = null;
+                        connectedSsid = null;
+                    }
+                }
+            };
+
+            networkCallback = callback;
+            cm.requestNetwork(request, callback, timeoutMs);
+        } catch (Exception e) {
+            releaseNetworkBinding(cm);
+            call.reject("Exception requesting Wi-Fi network: " + e.getMessage(), e);
+        }
     }
 
     @PluginMethod
     public void disconnectFromThetaWifi(PluginCall call) {
-        ConnectivityManager cm = connectivityManager != null ? connectivityManager
+        ConnectivityManager cm = (connectivityManager != null) ? connectivityManager
                 : (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         releaseNetworkBinding(cm);
 
@@ -106,7 +122,7 @@ public class ThetaWifiPlugin extends Plugin {
     public void getConnectionStatus(PluginCall call) {
         JSObject result = new JSObject();
         result.put("connected", activeNetwork != null);
-        result.put("ssid", connectedSsid != null ? connectedSsid : "");
+        result.put("ssid", (connectedSsid != null) ? connectedSsid : "");
         result.put("boundToNetwork", activeNetwork != null);
         result.put("platform", "android");
         call.resolve(result);
@@ -114,11 +130,14 @@ public class ThetaWifiPlugin extends Plugin {
 
     private void releaseNetworkBinding(ConnectivityManager cm) {
         if (cm != null) {
-            cm.bindProcessToNetwork(null);
+            try {
+                cm.bindProcessToNetwork(null);
+            } catch (Exception ignored) {
+            }
             if (networkCallback != null) {
                 try {
                     cm.unregisterNetworkCallback(networkCallback);
-                } catch (IllegalArgumentException ignored) {
+                } catch (Exception ignored) {
                 }
             }
         }
